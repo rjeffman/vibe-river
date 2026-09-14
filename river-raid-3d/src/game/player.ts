@@ -15,7 +15,7 @@ export class Player {
         this.mesh.add(wings);
 
         this.mesh.position.x = 0;
-        this.mesh.position.y = 0.7;
+        this.mesh.position.y = 0.9;
         this.mesh.position.z = 20;
         scene.add(this.mesh);
     }
@@ -41,14 +41,11 @@ export class Player {
             this.mesh.position.z -= this.speed * delta;
         }
         if (keys.has('ArrowDown')) {
-            this.mesh.position.z += this.speed * delta;
+            this.mesh.position.z += 1.2 * this.speed * delta;
         }
         
         // Clamp X (River width is 20, so -10 to 10)
         this.mesh.position.x = Math.max(-8.5, Math.min(8.5, this.mesh.position.x));
-        //this.mesh.position.x = Math.max(-8.5, Math.min(8.5, this.mesh.position.x));
-        //this.mesh.position.x = Math.max(-9.0, Math.min(9.0, this.mesh.position.x));
-        //this.mesh.position.x = Math.max(-10, Math.min(10, this.mesh.position.x));
 
         // Clamp Z (River bounds based on environment.ts)
         this.mesh.position.z = Math.max(-25, Math.min(25, this.mesh.position.z));
