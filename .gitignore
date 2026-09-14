@@ -1,0 +1,10 @@
+/docs/
+/logs
+
+# node modules
+**/node_modules/
+**/package-lock.json
+
+# temporay files
+.DS_Store
+*.swp

@@ -1,0 +1,5 @@
+# arkai configuration
+agent:
+  theme: gruvbox
+inference:
+  model: "ollama:gemma4:26b"
