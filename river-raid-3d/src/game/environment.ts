@@ -33,7 +33,7 @@ export class Environment {
         }
     }
 
-    private addSegment(type: 'dark' | 'light', z: number, enemies: bool): void {
+    private addSegment(type: 'dark' | 'light', z: number, enemies: boolean): void {
         const bankMaterial = type === 'dark' ? this.darkBankMaterial : this.lightBankMaterial;
         
         const river = new THREE.Mesh(this.riverGeometry, this.riverMaterial);
@@ -83,7 +83,6 @@ export class Environment {
         });
     }
 
-
     public update(delta: number, speed: number, playerZ: number): void {
         // Move all segments
         for (let i = 0; i < this.segments.length; i++) {
@@ -99,6 +98,25 @@ export class Environment {
             }
             for (const ship of segment.ships) {
                 ship.position.z += speed * delta;
+            }
+        }
+    }
+
+    public getShips(): THREE.Mesh[] {
+        const allShips: THREE.Mesh[] = [];
+        for (const segment of this.segments) {
+            allShips.push(...segment.ships);
+        }
+        return allShips;
+    }
+
+    public removeShip(ship: THREE.Mesh): void {
+        for (const segment of this.segments) {
+            const index = segment.ships.indexOf(ship);
+            if (index !== -1) {
+                segment.ships.splice(index, 1);
+                this.scene.remove(ship);
+                return;
             }
         }
     }
@@ -123,4 +141,3 @@ export class Environment {
         this.addSegment(last.type == 'dark' ? 'light' : 'dark', last.z - this.segmentLength, true);
     }
 }
-

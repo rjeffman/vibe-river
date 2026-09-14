@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { GameEngine } from './game/engine';
 import { Player } from './game/player';
 import { Environment } from './game/environment';
@@ -30,12 +31,32 @@ engine.startLoop((delta) => {
     // Pass player's Z position to the environment
     environment.update(delta, scrollSpeed, player.mesh.position.z);
 
-    // Update projectiles
+    // Update projectiles and check collisions
     for (let i = projectiles.length - 1; i >= 0; i--) {
         const projectile = projectiles[i];
         projectile.update(delta);
 
-        if (projectile.mesh.position.z < -45) {
+        // Collision detection
+        const projectileBox = new THREE.Box3().setFromObject(projectile.mesh);
+        const ships = environment.getShips();
+        
+        let collided = false;
+        for (let j = ships.length - 1; j >= 0; j--) {
+            const ship = ships[j];
+            const shipBox = new THREE.Box3().setFromObject(ship);
+            
+            if (projectileBox.intersectsBox(shipBox)) {
+                // Collision!
+                projectile.destroy();
+                projectiles.splice(i, 1);
+                
+                environment.removeShip(ship);
+                collided = true;
+                break;
+            }
+        }
+
+        if (!collided && projectile.mesh.position.z < -45) {
             projectile.destroy();
             projectiles.splice(i, 1);
         }
