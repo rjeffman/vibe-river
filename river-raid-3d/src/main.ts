@@ -39,20 +39,37 @@ engine.startLoop((delta) => {
         // Collision detection
         const projectileBox = new THREE.Box3().setFromObject(projectile.mesh);
         const ships = environment.getShips();
+        const helicopters = environment.getHelicopters();
         
         let collided = false;
+        
+        // Check ships
         for (let j = ships.length - 1; j >= 0; j--) {
             const ship = ships[j];
             const shipBox = new THREE.Box3().setFromObject(ship);
             
             if (projectileBox.intersectsBox(shipBox)) {
-                // Collision!
                 projectile.destroy();
                 projectiles.splice(i, 1);
-                
                 environment.removeShip(ship);
                 collided = true;
                 break;
+            }
+        }
+
+        // Check helicopters if not already collided
+        if (!collided) {
+            for (let j = helicopters.length - 1; j >= 0; j--) {
+                const heli = helicopters[j];
+                const heliBox = new THREE.Box3().setFromObject(heli);
+                
+                if (projectileBox.intersectsBox(heliBox)) {
+                    projectile.destroy();
+                    projectiles.splice(i, 1);
+                    environment.removeHelicopter(heli);
+                    collided = true;
+                    break;
+                }
             }
         }
 
