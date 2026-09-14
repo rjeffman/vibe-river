@@ -79,10 +79,11 @@ export class Environment {
                     const heli = new THREE.Mesh(heliGeometry, heliMaterial);
                     heli.position.set(
                         (Math.random() - 0.5) * 15,
-                        0.5,
+                        0.6,
                         z + enemyZ
                     );
                     heli.rotation.y = Math.PI / 2;
+                    heli.userData.targetX = heli.position.x > 0 ? -10 : 10;
                     this.scene.add(heli);
                     helicopters.push(heli);
                 }
@@ -117,8 +118,26 @@ export class Environment {
             for (const ship of segment.ships) {
                 ship.position.z += speed * delta;
             }
-            for (const heli of segment.helicopters) {
+            for (let j = segment.helicopters.length - 1; j >= 0; j--) {
+                const heli = segment.helicopters[j];
                 heli.position.z += speed * delta;
+               
+		/*
+                if (heli.position.z > 45) {
+                    this.removeHelicopter(heli);
+                    continue;
+                }
+		*/
+
+                if (heli.position.z < 45) {
+                    const targetX = heli.userData.targetX;
+                    const speedX = 15;
+                    if (Math.abs(heli.position.x - targetX) < 0.5) {
+                        heli.userData.targetX = targetX > 0 ? -9 : 9;
+                    } else {
+                        heli.position.x += (targetX > heli.position.x ? 1 : -1) * speedX * delta;
+                    }
+                }
             }
         }
     }
