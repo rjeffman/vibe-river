@@ -4,7 +4,7 @@ interface Segment {
     river: THREE.Mesh;
     banks: THREE.Mesh[];
     ships: THREE.Mesh[];
-    helicopters: THREE.Mesh[];
+    helicopters: THREE.Object3D[];
     type: 'dark' | 'light';
     z: number;
 }
@@ -51,13 +51,13 @@ export class Environment {
         this.scene.add(rightBank);
 
         const ships: THREE.Mesh[] = [];
-        const helicopters: THREE.Mesh[] = [];
+        const helicopters: THREE.Object3D[] = [];
         const numEnemies = enemies ? 1 + Math.floor(Math.random() * 4) : 0;
         
-        const shipGeometry = new THREE.BoxGeometry(1.5, 0.9, 3);
+        const shipGeometry = new THREE.BoxGeometry(1.4, 1.5, 3);
         const shipMaterial = new THREE.MeshStandardMaterial({ color: 0xffa500 });
         
-        const heliGeometry = new THREE.BoxGeometry(1.2, 0.6, 1.8);
+        const heliGeometry = new THREE.CapsuleGeometry(0.4, 1.4, 4, 8);
         const heliMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
         
         const minZDistance = 1.5;
@@ -76,14 +76,36 @@ export class Environment {
                     this.scene.add(ship);
                     ships.push(ship);
                 } else {
-                    const heli = new THREE.Mesh(heliGeometry, heliMaterial);
+                    const heli = new THREE.Group();
                     heli.position.set(
                         (Math.random() - 0.5) * 15,
                         0.6,
                         z + enemyZ
                     );
-                    heli.rotation.y = Math.PI / 2;
                     heli.userData.targetX = heli.position.x > 0 ? -10 : 10;
+
+                    const body = new THREE.Mesh(heliGeometry, heliMaterial);
+                    body.rotation.z = Math.PI / 2;
+                    heli.add(body);
+
+                    // Add spinning white cross above and near the front
+                    const crossGroup = new THREE.Group();
+                    crossGroup.name = 'cross';
+
+                    const crossSize = 2.0;
+                    const crossThickness = 0.1;
+                    const crossMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+                    const bar1 = new THREE.Mesh(new THREE.BoxGeometry(crossSize, crossThickness, crossThickness), crossMaterial);
+                    const bar2 = new THREE.Mesh(new THREE.BoxGeometry(crossThickness, crossThickness, crossSize), crossMaterial);
+
+                    crossGroup.add(bar1);
+                    crossGroup.add(bar2);
+
+                    // Position above (y)
+                    crossGroup.position.set(-0.6, 0.4, 0.0);
+                    heli.add(crossGroup);
+
                     this.scene.add(heli);
                     helicopters.push(heli);
                 }
@@ -105,7 +127,8 @@ export class Environment {
     public update(delta: number, speed: number, playerZ: number): void {
         // Move all segments
         for (let i = 0; i < this.segments.length; i++) {
-            let segment = this.segments[i];
+            const segment = this.segments[i];
+            if (!segment) continue;
             const new_z = segment.river.position.z + speed * delta;
             segment.river.position.z = new_z;
             if (new_z > (30 + this.segmentLength)) {
@@ -120,14 +143,13 @@ export class Environment {
             }
             for (let j = segment.helicopters.length - 1; j >= 0; j--) {
                 const heli = segment.helicopters[j];
+                if (!heli) continue;
                 heli.position.z += speed * delta;
-               
-		/*
-                if (heli.position.z > 45) {
-                    this.removeHelicopter(heli);
-                    continue;
+
+                const cross = heli.getObjectByName('cross');
+                if (cross) {
+                    cross.rotation.y += delta * 10;
                 }
-		*/
 
                 if (heli.position.z < 45) {
                     const targetX = heli.userData.targetX;
@@ -150,8 +172,8 @@ export class Environment {
         return allShips;
     }
 
-    public getHelicopters(): THREE.Mesh[] {
-        const allHelicopters: THREE.Mesh[] = [];
+    public getHelicopters(): THREE.Object3D[] {
+        const allHelicopters: THREE.Object3D[] = [];
         for (const segment of this.segments) {
             allHelicopters.push(...segment.helicopters);
         }
@@ -169,7 +191,7 @@ export class Environment {
         }
     }
 
-    public removeHelicopter(heli: THREE.Mesh): void {
+    public removeHelicopter(heli: THREE.Object3D): void {
         for (const segment of this.segments) {
             const index = segment.helicopters.indexOf(heli);
             if (index !== -1) {
@@ -182,6 +204,7 @@ export class Environment {
 
     private recycleSegment(): void {
         const segmentToRecycle = this.segments[0];
+        if (!segmentToRecycle) return;
         
         // Remove meshes from scene
         this.scene.remove(segmentToRecycle.river);
@@ -199,7 +222,9 @@ export class Environment {
         this.segments.splice(0, 1);
 
         // Add new segment
-        const last = this.segments[this.segments.length - 1]
-        this.addSegment(last.type == 'dark' ? 'light' : 'dark', last.z - this.segmentLength, true);
+        const last = this.segments[this.segments.length - 1];
+        if (last) {
+            this.addSegment(last.type == 'dark' ? 'light' : 'dark', last.z - this.segmentLength, true);
+        }
     }
 }

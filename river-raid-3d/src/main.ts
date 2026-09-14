@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { GameEngine } from './game/engine';
-import { Player } from './game/player';
-import { Environment } from './game/environment';
-import { Projectile } from './game/projectile';
+import { GameEngine } from './game/engine.js';
+import { Player } from './game/player.js';
+import { Environment } from './game/environment.js';
+import { Projectile } from './game/projectile.js';
 
 const container = document.getElementById('game-container') as HTMLElement;
 if (!container) {
@@ -26,7 +26,7 @@ window.addEventListener('keyup', (e) => keys.delete(e.code));
 
 const scrollSpeed = 15;
 
-engine.startLoop((delta) => {
+engine.startLoop((delta: number) => {
     player.update(delta, keys);
     // Pass player's Z position to the environment
     environment.update(delta, scrollSpeed, player.mesh.position.z);
@@ -34,6 +34,7 @@ engine.startLoop((delta) => {
     // Update projectiles and check collisions
     for (let i = projectiles.length - 1; i >= 0; i--) {
         const projectile = projectiles[i];
+        if (!projectile) continue;
         projectile.update(delta);
 
         // Collision detection
@@ -46,6 +47,7 @@ engine.startLoop((delta) => {
         // Check ships
         for (let j = ships.length - 1; j >= 0; j--) {
             const ship = ships[j];
+            if (!ship) continue;
             const shipBox = new THREE.Box3().setFromObject(ship);
             
             if (projectileBox.intersectsBox(shipBox)) {
@@ -61,6 +63,7 @@ engine.startLoop((delta) => {
         if (!collided) {
             for (let j = helicopters.length - 1; j >= 0; j--) {
                 const heli = helicopters[j];
+                if (!heli) continue;
                 const heliBox = new THREE.Box3().setFromObject(heli);
                 
                 if (projectileBox.intersectsBox(heliBox)) {
