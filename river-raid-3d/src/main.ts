@@ -15,6 +15,24 @@ const environment = new Environment(engine.getScene());
 
 const keys = new Set<string>();
 const projectiles: Projectile[] = [];
+let score = 0;
+const scoreElement = document.getElementById('score') as HTMLElement;
+let lives = 3;
+const livesElement = document.getElementById('lives') as HTMLElement;
+
+const updateScore = (points: number) => {
+    score += points;
+    scoreElement.textContent = score.toString().padStart(5, '0');
+};
+
+const updateLivesUI = () => {
+    const icons = livesElement.getElementsByClassName('life-icon');
+    for (let i = 0; i < icons.length; i++) {
+        (icons[i] as HTMLElement).style.visibility = i < lives ? 'visible' : 'hidden';
+    }
+};
+
+updateLivesUI();
 
 window.addEventListener('keydown', (e) => {
     keys.add(e.code);
@@ -30,6 +48,39 @@ engine.startLoop((delta: number) => {
     player.update(delta, keys);
     // Pass player's Z position to the environment
     environment.update(delta, scrollSpeed, player.mesh.position.z);
+
+    // Player collision detection
+    const playerBox = new THREE.Box3().setFromObject(player.mesh);
+    const ships = environment.getShips();
+    const helicopters = environment.getHelicopters();
+    let playerCollided = false;
+
+    for (const ship of ships) {
+        if (playerBox.intersectsBox(new THREE.Box3().setFromObject(ship))) {
+            playerCollided = true;
+            break;
+        }
+    }
+
+    if (!playerCollided) {
+        for (const heli of helicopters) {
+            if (playerBox.intersectsBox(new THREE.Box3().setFromObject(heli))) {
+                playerCollided = true;
+                break;
+            }
+        }
+    }
+
+    if (playerCollided) {
+        lives--;
+        updateLivesUI();
+        if (lives <= 0) {
+            alert("Game Over!");
+            location.reload();
+        } else {
+            player.mesh.position.set(0, 0.9, 20);
+        }
+    }
 
     // Update projectiles and check collisions
     for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -54,6 +105,7 @@ engine.startLoop((delta: number) => {
                 projectile.destroy();
                 projectiles.splice(i, 1);
                 environment.removeShip(ship);
+                updateScore(100);
                 collided = true;
                 break;
             }
@@ -70,6 +122,7 @@ engine.startLoop((delta: number) => {
                     projectile.destroy();
                     projectiles.splice(i, 1);
                     environment.removeHelicopter(heli);
+                    updateScore(150);
                     collided = true;
                     break;
                 }

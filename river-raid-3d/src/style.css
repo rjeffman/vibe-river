@@ -8,4 +8,30 @@ body {
 #game-container {
     width: 100vw;
     height: 100vh;
+    position: relative;
+}
+
+#score {
+    position: absolute;
+    top: 50px;
+    left: 50px;
+    color: white;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 48px;
+    pointer-events: none;
+    text-shadow: 2px 2px #000;
+}
+
+#lives {
+    position: absolute;
+    top: 140px;
+    left: 50px;
+    display: flex;
+    gap: 12px;
+    pointer-events: none;
+}
+
+.life-icon {
+    width: 36px;
+    height: 36px;
 }
