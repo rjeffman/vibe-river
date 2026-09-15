@@ -1,6 +1,12 @@
 /docs/
 /logs
 
+# build result
+*.js
+*.d.ts
+*.map
+**/dist/
+
 # node modules
 **/node_modules/
 **/package-lock.json
