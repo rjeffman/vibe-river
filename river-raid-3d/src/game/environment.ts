@@ -82,7 +82,10 @@ export class Environment {
                         0.6,
                         z + enemyZ
                     );
-                    heli.userData.targetX = heli.position.x > 0 ? -10 : 10;
+                    heli.userData.targetX = heli.position.x > 0 ? -9.5 : 9.5;
+                    heli.userData.isTurning = false;
+                    heli.userData.turnProgress = 0;
+                    heli.userData.startRotationY = 0;
 
                     const body = new THREE.Mesh(heliGeometry, heliMaterial);
                     body.rotation.z = Math.PI / 2;
@@ -103,7 +106,7 @@ export class Environment {
                     crossGroup.add(bar2);
 
                     // Position above (y)
-                    crossGroup.position.set(-0.6, 0.4, 0.0);
+                    crossGroup.position.set((heli.userData.targetX > 0 ? 1 : -1) * 0.6, 0.4, 0);
                     heli.add(crossGroup);
 
                     this.scene.add(heli);
@@ -156,9 +159,21 @@ export class Environment {
                     const speedX = 15;
                     if (Math.abs(heli.position.x - targetX) < 0.5) {
                         heli.userData.targetX = targetX > 0 ? -9 : 9;
-                    } else {
+                        heli.userData.isTurning = true;
+                        heli.userData.turnProgress = 0;
+                        heli.userData.startRotationY = heli.rotation.y;
+                    } else if (!heli.userData.isTurning) {
                         heli.position.x += (targetX > heli.position.x ? 1 : -1) * speedX * delta;
                     }
+                }
+
+                if (heli.userData.isTurning) {
+                    heli.userData.turnProgress += delta / 0.5;
+                    if (heli.userData.turnProgress >= 1) {
+                        heli.userData.turnProgress = 1;
+                        heli.userData.isTurning = false;
+                    }
+                    heli.rotation.y = heli.userData.startRotationY + (heli.userData.turnProgress * Math.PI);
                 }
             }
         }
