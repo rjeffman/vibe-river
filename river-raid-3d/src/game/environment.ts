@@ -15,8 +15,8 @@ export class Environment {
     private riverGeometry: THREE.PlaneGeometry;
     private bankGeometry: THREE.BoxGeometry;
     private riverMaterial: THREE.ShaderMaterial;
-    private darkBankMaterial: THREE.MeshBasicMaterial;
-    private lightBankMaterial: THREE.MeshBasicMaterial;
+    private darkBankMaterial: THREE.ShaderMaterial;
+    private lightBankMaterial: THREE.ShaderMaterial;
     private segmentLength: number = 100;
 
     constructor(scene: THREE.Scene) {
@@ -78,8 +78,57 @@ export class Environment {
         });
 
         this.bankGeometry = new THREE.BoxGeometry(5, 1, this.segmentLength);
-        this.darkBankMaterial = new THREE.MeshBasicMaterial({ color: 0x228b22 });
-        this.lightBankMaterial = new THREE.MeshBasicMaterial({ color: 0x4CAF50 }); // Darker light green
+        const bankVertexShader = `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+        const bankFragmentShader = `
+            precision mediump float;
+            uniform float uTime;
+            uniform vec3 uColor;
+            varying vec2 vUv;
+
+            float hash(vec2 p) {
+                return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+            }
+
+            float noise(vec2 p) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                vec2 u = f * f * (3.0 - 2.0 * f);
+                return mix(mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+                           mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+            }
+
+            void main() {
+                vec2 uv = vUv;
+                float n = noise(uv * 8.0 + vec2(uTime * 0.2, uTime * 0.1));
+                vec3 color = uColor * (0.8 + 0.2 * n);
+                float blades = step(0.8, fract(uv.x * 40.0 + n * 2.0));
+                color += blades * 0.05;
+                gl_FragColor = vec4(color, 1.0);
+            }
+        `;
+
+        this.darkBankMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uColor: { value: new THREE.Color(0x228b22) }
+            },
+            vertexShader: bankVertexShader,
+            fragmentShader: bankFragmentShader
+        });
+        this.lightBankMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uColor: { value: new THREE.Color(0x228b22) }
+            },
+            vertexShader: bankVertexShader,
+            fragmentShader: bankFragmentShader
+        });
         
         // Start with 4 segments to provide a larger buffer
         this.addSegment('dark', 10, false);
@@ -186,6 +235,13 @@ export class Environment {
         if (this.riverMaterial.uniforms && this.riverMaterial.uniforms['uTime']) {
             this.riverMaterial.uniforms['uTime'].value = elapsedTime;
         }
+
+        // Update bank materials time
+        [this.darkBankMaterial, this.lightBankMaterial].forEach(mat => {
+            if (mat.uniforms && mat.uniforms['uTime']) {
+                mat.uniforms['uTime'].value = elapsedTime;
+            }
+        });
 
         // Move all segments
         for (let i = 0; i < this.segments.length; i++) {
