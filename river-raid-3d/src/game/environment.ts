@@ -14,7 +14,7 @@ export class Environment {
     private scene: THREE.Scene;
     private riverGeometry: THREE.PlaneGeometry;
     private bankGeometry: THREE.BoxGeometry;
-    private riverMaterial: THREE.MeshBasicMaterial;
+    private riverMaterial: THREE.ShaderMaterial;
     private darkBankMaterial: THREE.MeshBasicMaterial;
     private lightBankMaterial: THREE.MeshBasicMaterial;
     private segmentLength: number = 100;
@@ -22,11 +22,65 @@ export class Environment {
     constructor(scene: THREE.Scene) {
         this.scene = scene;
         this.riverGeometry = new THREE.PlaneGeometry(20, this.segmentLength);
-        this.riverMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+        
+        this.riverMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 }
+            },
+            side: THREE.DoubleSide,
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                precision mediump float;
+
+                uniform float uTime;
+                varying vec2 vUv;
+
+                float ribbon(float base, float uStart, float phase) {
+                    float u = vUv.x + uStart;
+                    float lowFrequency = 0.01 * sin(u * 12.0 - uTime * 0.8 + phase);
+                    float highFrequency = 0.003 * sin(u * 58.0 + uTime * 2.8 + phase * 1.7);
+                    float center = base + lowFrequency + highFrequency;
+                    float ribbonShape = exp(-pow((vUv.y - center) / 0.004, 2.0));
+                    float segmentPattern = 0.5 + 0.5 * sin(u * 20.0 + uTime * 0.35 + phase * 2.0);
+                    float segments = smoothstep(0.12, 0.78, segmentPattern);
+                    return ribbonShape * segments;
+                }
+
+                void main() {
+                    vec2 uv = vUv;
+
+                    // Several very thin, independently phased wavy ribbons.
+                    float wave = ribbon(0.08, 0.00, 0.0)
+                        + ribbon(0.20, 0.13, 1.0)
+                        + ribbon(0.32, 0.26, 2.1)
+                        + ribbon(0.44, 0.39, 3.0)
+                        + ribbon(0.56, 0.52, 4.0)
+                        + ribbon(0.68, 0.65, 4.8)
+                        + ribbon(0.80, 0.78, 5.7)
+                        + ribbon(0.92, 0.91, 6.5);
+
+                    float caustic = wave;
+
+                    vec3 baseColor = vec3(0.0, 0.18, 0.5);
+                    vec3 causticColor = vec3(0.25, 0.9, 1.0);
+                    
+                    vec3 finalColor = mix(baseColor, causticColor, clamp(caustic, 0.0, 1.0));
+                    gl_FragColor = vec4(finalColor, 1.0);
+                }
+            `
+
+        });
+
         this.bankGeometry = new THREE.BoxGeometry(5, 1, this.segmentLength);
         this.darkBankMaterial = new THREE.MeshBasicMaterial({ color: 0x228b22 });
         this.lightBankMaterial = new THREE.MeshBasicMaterial({ color: 0x4CAF50 }); // Darker light green
-
+        
         // Start with 4 segments to provide a larger buffer
         this.addSegment('dark', 10, false);
         for (let i = 0; i < 2; i++) {
@@ -127,7 +181,12 @@ export class Environment {
         });
     }
 
-    public update(delta: number, speed: number, playerZ: number): void {
+    public update(delta: number, speed: number, playerZ: number, elapsedTime: number): void {
+        // Update river material time
+        if (this.riverMaterial.uniforms && this.riverMaterial.uniforms['uTime']) {
+            this.riverMaterial.uniforms['uTime'].value = elapsedTime;
+        }
+
         // Move all segments
         for (let i = 0; i < this.segments.length; i++) {
             const segment = this.segments[i];

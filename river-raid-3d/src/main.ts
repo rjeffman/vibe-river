@@ -19,6 +19,7 @@ let score = 0;
 const scoreElement = document.getElementById('score') as HTMLElement;
 let lives = 3;
 const livesElement = document.getElementById('lives') as HTMLElement;
+const gameOverScreen = document.getElementById('game-over-screen') as HTMLElement;
 
 const updateScore = (points: number) => {
     score += points;
@@ -32,9 +33,17 @@ const updateLivesUI = () => {
     }
 };
 
+const showGameOver = () => {
+    gameOverScreen.style.display = 'flex';
+};
+
 updateLivesUI();
 
 window.addEventListener('keydown', (e) => {
+    if (gameOverScreen.style.display === 'flex' && (e.key === 'Enter' || e.code === 'Enter')) {
+        location.reload();
+        return;
+    }
     keys.add(e.code);
     if (e.code === 'Space' && projectiles.length < 5) {
         projectiles.push(new Projectile(engine.getScene(), player.mesh.position.clone()));
@@ -45,9 +54,10 @@ window.addEventListener('keyup', (e) => keys.delete(e.code));
 const scrollSpeed = 15;
 
 engine.startLoop((delta: number) => {
+    const elapsedTime = engine.getClock().getElapsedTime();
     player.update(delta, keys);
     // Pass player's Z position to the environment
-    environment.update(delta, scrollSpeed, player.mesh.position.z);
+    environment.update(delta, scrollSpeed, player.mesh.position.z, elapsedTime);
 
     // Player collision detection
     const playerBox = new THREE.Box3().setFromObject(player.mesh);
@@ -75,8 +85,7 @@ engine.startLoop((delta: number) => {
         lives--;
         updateLivesUI();
         if (lives <= 0) {
-            alert("Game Over!");
-            location.reload();
+            showGameOver();
         } else {
             player.mesh.position.set(0, 0.9, 20);
         }
@@ -110,7 +119,7 @@ engine.startLoop((delta: number) => {
                 break;
             }
         }
-
+        
         // Check helicopters if not already collided
         if (!collided) {
             for (let j = helicopters.length - 1; j >= 0; j--) {
@@ -128,7 +137,7 @@ engine.startLoop((delta: number) => {
                 }
             }
         }
-
+        
         if (!collided && projectile.mesh.position.z < -45) {
             projectile.destroy();
             projectiles.splice(i, 1);
