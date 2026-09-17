@@ -81,15 +81,16 @@ engine.startLoop((delta: number) => {
         }
     }
 
-    if (playerCollided) {
-        lives--;
-        updateLivesUI();
-        if (lives <= 0) {
-            showGameOver();
-        } else {
-            player.mesh.position.set(0, 0.9, 20);
+        if (playerCollided) {
+            lives--;
+            updateLivesUI();
+            if (lives <= 0) {
+                showGameOver();
+            } else {
+                player.mesh.position.set(0, 0.9, 20);
+                environment.reset();
+            }
         }
-    }
 
     // Update projectiles and check collisions
     for (let i = projectiles.length - 1; i >= 0; i--) {

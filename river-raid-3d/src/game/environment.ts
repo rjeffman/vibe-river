@@ -130,11 +130,9 @@ export class Environment {
             fragmentShader: bankFragmentShader
         });
         
-        // Start with 4 segments to provide a larger buffer
+        // Start with 2 segments to provide a larger buffer
         this.addSegment('dark', 10, false);
-        for (let i = 0; i < 2; i++) {
-            this.addSegment((i % 2 == 0) ? 'light' : 'dark', 10 + -100*(i+1), false);
-        }
+        this.addSegment('light', 10 - this.segmentLength, false);
     }
 
     private addSegment(type: 'dark' | 'light', z: number, enemies: boolean): void {
@@ -330,6 +328,26 @@ export class Environment {
                 return;
             }
         }
+    }
+
+    public reset(): void {
+        for (const segment of this.segments) {
+            this.scene.remove(segment.river);
+            for (const bank of segment.banks) {
+                this.scene.remove(bank);
+            }
+            for (const ship of segment.ships) {
+                this.scene.remove(ship);
+            }
+            for (const heli of segment.helicopters) {
+                this.scene.remove(heli);
+            }
+        }
+        this.segments = [];
+
+        this.addSegment('dark', 10, false);
+        this.addSegment('light', 10 - this.segmentLength, false);
+        this.addSegment('dark', 10 - 2 * this.segmentLength, false);
     }
 
     private recycleSegment(): void {
