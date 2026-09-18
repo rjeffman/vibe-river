@@ -87,7 +87,7 @@ engine.startLoop((delta: number) => {
         const helicopters = environment.getHelicopters();
 
         for (const ship of ships) {
-            if (playerBox.intersectsBox(new THREE.Box3().setFromObject(ship))) {
+            if (!ship.userData.isSinking && playerBox.intersectsBox(new THREE.Box3().setFromObject(ship))) {
                 playerCollided = true;
                 break;
             }

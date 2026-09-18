@@ -277,8 +277,23 @@ export class Environment {
             for (const bank of segment.banks) {
                 bank.position.z += speed * delta;
             }
-            for (const ship of segment.ships) {
+            for (let i = segment.ships.length - 1; i >= 0; i--) {
+                const ship = segment.ships[i];
                 ship.position.z += speed * delta;
+
+                if (ship.userData.isSinking) {
+                    ship.userData.sinkingProgress = (ship.userData.sinkingProgress || 0) + delta;
+                    
+                    ship.children.forEach((child, index) => {
+                        child.position.y -= (4.0 + index * 1.0) * delta;
+                        child.position.x += (index - 1) * 0.3 * delta;
+                    });
+
+                    if (ship.userData.sinkingProgress > 0.5) {
+                        this.scene.remove(ship);
+                        segment.ships.splice(i, 1);
+                    }
+                }
             }
             for (let j = segment.helicopters.length - 1; j >= 0; j--) {
                 const heli = segment.helicopters[j];
@@ -335,8 +350,7 @@ export class Environment {
         for (const segment of this.segments) {
             const index = segment.ships.indexOf(ship);
             if (index !== -1) {
-                segment.ships.splice(index, 1);
-                this.scene.remove(ship);
+                ship.userData.isSinking = true;
                 return;
             }
         }
