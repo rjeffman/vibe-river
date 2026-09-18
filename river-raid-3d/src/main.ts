@@ -13,7 +13,7 @@ let score = 0;
 // ...
 const scoreElement = document.getElementById('score') as HTMLElement;
 let lives = 3;
-let isGameOverSequence = false;
+let isGameOverSequence = true;
 const livesElement = document.getElementById('lives') as HTMLElement;
 const gameOverScreen = document.getElementById('game-over-screen') as HTMLElement;
 const keys = new Set<string>();
@@ -37,11 +37,28 @@ const showGameOver = () => {
     gameOverScreen.style.display = 'flex';
 };
 
+const restartGame = () => {
+    lives = 3;
+    score = 0;
+    scoreElement.textContent = '000000';
+    updateLivesUI();
+    
+    isGameOverSequence = false;
+    gameOverScreen.style.display = 'none';
+    
+    environment.reset();
+    player.mesh.visible = true;
+    player.mesh.position.set(0, 0.9, 20);
+    
+    projectiles.length = 0;
+    explosions.length = 0;
+};
+
 updateLivesUI();
 
 window.addEventListener('keydown', (e) => {
     if (gameOverScreen.style.display === 'flex' && (e.key === 'Enter' || e.code === 'Enter')) {
-        location.reload();
+        restartGame();
         return;
     }
     keys.add(e.code);
