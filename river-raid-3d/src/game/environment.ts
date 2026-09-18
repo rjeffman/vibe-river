@@ -3,7 +3,7 @@ import * as THREE from 'three';
 interface Segment {
     river: THREE.Mesh;
     banks: THREE.Mesh[];
-    ships: THREE.Mesh[];
+    ships: THREE.Object3D[];
     helicopters: THREE.Object3D[];
     type: 'dark' | 'light';
     z: number;
@@ -151,12 +151,9 @@ export class Environment {
         rightBank.position.set(12.5, 0, z);
         this.scene.add(rightBank);
 
-        const ships: THREE.Mesh[] = [];
+        const ships: THREE.Object3D[] = [];
         const helicopters: THREE.Object3D[] = [];
         const numEnemies = enemies ? 1 + Math.floor(Math.random() * 4) : 0;
-        
-        const shipGeometry = new THREE.BoxGeometry(1.4, 1.5, 3);
-        const shipMaterial = new THREE.MeshStandardMaterial({ color: 0xffa500 });
         
         const heliGeometry = new THREE.CapsuleGeometry(0.4, 1.4, 4, 8);
         const heliMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
@@ -167,10 +164,36 @@ export class Environment {
             enemyZ += minZDistance + (Math.random() * 0.8 * this.segmentLength);
             if (enemyZ < this.segmentLength) {
                 if (Math.random() < 0.5) {
-                    const ship = new THREE.Mesh(shipGeometry, shipMaterial);
+                    const ship = new THREE.Group();
+                    
+                    // Hull (Extruded Triangle)
+                    const shape = new THREE.Shape();
+                    shape.moveTo(-1, 1);   // Top left
+                    shape.lineTo(1, 1);    // Top right
+                    shape.lineTo(0, 0);    // Bottom center
+                    
+                    const extrudeSettings = { depth: 3.6, bevelEnabled: false };
+                    const hullGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+                    const hullMaterial = new THREE.MeshStandardMaterial({ color: 0x222222 });
+                    const hull = new THREE.Mesh(hullGeometry, hullMaterial);
+                    // Position hull so its top (y=1) is at the bottom of the deck (y=-0.15)
+                    hull.position.set(0, -1.15, -2); 
+                    ship.add(hull);
+
+                    const deckGeometry = new THREE.BoxGeometry(1.8, 0.3, 4);
+                    const deckMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
+                    const deck = new THREE.Mesh(deckGeometry, deckMaterial);
+                    ship.add(deck);
+
+                    const islandGeometry = new THREE.BoxGeometry(0.4, 0.8, 0.8);
+                    const islandMaterial = new THREE.MeshStandardMaterial({ color: 0x999999 });
+                    const island = new THREE.Mesh(islandGeometry, islandMaterial);
+                    island.position.set(-0.2, 1, -0.5);
+                    ship.add(island);
+
                     ship.position.set(
                         (Math.random() - 0.5) * 15,
-                        0.3,
+                        1.0,
                         z + enemyZ
                     );
                     ship.rotation.y = Math.PI / 2;
@@ -292,8 +315,8 @@ export class Environment {
         }
     }
 
-    public getShips(): THREE.Mesh[] {
-        const allShips: THREE.Mesh[] = [];
+    public getShips(): THREE.Object3D[] {
+        const allShips: THREE.Object3D[] = [];
         for (const segment of this.segments) {
             allShips.push(...segment.ships);
         }
@@ -308,7 +331,7 @@ export class Environment {
         return allHelicopters;
     }
 
-    public removeShip(ship: THREE.Mesh): void {
+    public removeShip(ship: THREE.Object3D): void {
         for (const segment of this.segments) {
             const index = segment.ships.indexOf(ship);
             if (index !== -1) {
