@@ -55,12 +55,19 @@ const restartGame = () => {
 };
 
 updateLivesUI();
+if (isGameOverSequence) {
+    lives = 0;
+    score = 0;
+    scoreElement.textContent = '000000';
+    showGameOver();
+}
 
 window.addEventListener('keydown', (e) => {
     if (gameOverScreen.style.display === 'flex' && (e.key === 'Enter' || e.code === 'Enter')) {
         restartGame();
         return;
     }
+    if (gameOverScreen.style.display === 'flex' || isGameOverSequence) return;
     keys.add(e.code);
     if (e.code === 'Space' && projectiles.length < 5) {
         projectiles.push(new Projectile(engine.getScene(), player.mesh.position.clone()));

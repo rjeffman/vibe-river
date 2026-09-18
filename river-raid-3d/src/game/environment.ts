@@ -253,14 +253,14 @@ export class Environment {
 
     public update(delta: number, speed: number, playerZ: number, elapsedTime: number): void {
         // Update river material time
-        if (this.riverMaterial.uniforms && this.riverMaterial.uniforms['uTime']) {
-            this.riverMaterial.uniforms['uTime'].value = elapsedTime;
+        if (this.riverMaterial.uniforms && this.riverMaterial.uniforms["uTime"]) {
+            this.riverMaterial.uniforms["uTime"].value = elapsedTime;
         }
 
         // Update bank materials time
         [this.darkBankMaterial, this.lightBankMaterial].forEach(mat => {
-            if (mat.uniforms && mat.uniforms['uTime']) {
-                mat.uniforms['uTime'].value = elapsedTime;
+            if (mat.uniforms && mat.uniforms["uTime"]) {
+                mat.uniforms["uTime"].value = elapsedTime;
             }
         });
 
@@ -279,19 +279,21 @@ export class Environment {
             }
             for (let i = segment.ships.length - 1; i >= 0; i--) {
                 const ship = segment.ships[i];
-                ship.position.z += speed * delta;
+                if (ship !== undefined) {
+                    ship.position.z += speed * delta;
 
-                if (ship.userData.isSinking) {
-                    ship.userData.sinkingProgress = (ship.userData.sinkingProgress || 0) + delta;
-                    
-                    ship.children.forEach((child, index) => {
-                        child.position.y -= (4.0 + index * 1.0) * delta;
-                        child.position.x += (index - 1) * 0.3 * delta;
-                    });
+                    if (ship.userData.isSinking) {
+                        ship.userData.sinkingProgress = (ship.userData.sinkingProgress || 0) + delta;
+                        
+                        ship.children.forEach((child, index) => {
+                            child.position.y -= (1.0 + index * 0.4) * delta;
+                            child.position.x += (index - 1) * 0.3 * delta;
+                        });
 
-                    if (ship.userData.sinkingProgress > 0.5) {
-                        this.scene.remove(ship);
-                        segment.ships.splice(i, 1);
+                        if (ship.userData.sinkingProgress > 0.5) {
+                            this.scene.remove(ship);
+                            segment.ships.splice(i, 1);
+                        }
                     }
                 }
             }
@@ -300,7 +302,7 @@ export class Environment {
                 if (!heli) continue;
                 heli.position.z += speed * delta;
 
-                const cross = heli.getObjectByName('cross');
+                const cross = heli.getObjectByName("cross");
                 if (cross) {
                     cross.rotation.y += delta * 10;
                 }
@@ -329,6 +331,7 @@ export class Environment {
             }
         }
     }
+
 
     public getShips(): THREE.Object3D[] {
         const allShips: THREE.Object3D[] = [];

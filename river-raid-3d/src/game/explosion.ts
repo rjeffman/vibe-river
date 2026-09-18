@@ -36,7 +36,9 @@ export class Explosion {
 
         for (let i = this.debris.length - 1; i >= 0; i--) {
             const item = this.debris[i];
+            if (!item) continue;
             item.mesh.position.add(item.velocity.clone().multiplyScalar(delta));
+            if (!item) continue;
             item.mesh.rotation.x += item.rotationVelocity.x * delta;
             item.mesh.rotation.y += item.rotationVelocity.y * delta;
             item.mesh.rotation.z += item.rotationVelocity.z * delta;
