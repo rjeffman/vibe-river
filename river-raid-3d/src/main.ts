@@ -156,7 +156,7 @@ engine.startLoop((delta: number) => {
             if (!ship) continue;
             const shipBox = new THREE.Box3().setFromObject(ship);
             
-            if (projectileBox.intersectsBox(shipBox)) {
+            if (!ship.userData.isSinking && projectileBox.intersectsBox(shipBox)) {
                 projectile.destroy();
                 projectiles.splice(i, 1);
                 environment.removeShip(ship);
