@@ -3,27 +3,27 @@ import { GameEngine } from './game/engine.js';
 import { Player } from './game/player.js';
 import { Environment } from './game/environment.js';
 import { Projectile } from './game/projectile.js';
+import { Explosion } from './game/explosion.js';
 
 const container = document.getElementById('game-container') as HTMLElement;
-if (!container) {
-    throw new Error('Container not found');
-}
-
+// ...
+const projectiles: Projectile[] = [];
+const explosions: Explosion[] = [];
+let score = 0;
+// ...
+const scoreElement = document.getElementById('score') as HTMLElement;
+let lives = 3;
+let isGameOverSequence = false;
+const livesElement = document.getElementById('lives') as HTMLElement;
+const gameOverScreen = document.getElementById('game-over-screen') as HTMLElement;
+const keys = new Set<string>();
 const engine = new GameEngine(container);
 const player = new Player(engine.getScene());
 const environment = new Environment(engine.getScene());
 
-const keys = new Set<string>();
-const projectiles: Projectile[] = [];
-let score = 0;
-const scoreElement = document.getElementById('score') as HTMLElement;
-let lives = 3;
-const livesElement = document.getElementById('lives') as HTMLElement;
-const gameOverScreen = document.getElementById('game-over-screen') as HTMLElement;
-
 const updateScore = (points: number) => {
     score += points;
-    scoreElement.textContent = score.toString().padStart(5, '0');
+    scoreElement.textContent = score.toString().padStart(6, '0');
 };
 
 const updateLivesUI = () => {
@@ -59,38 +59,66 @@ engine.startLoop((delta: number) => {
     // Pass player's Z position to the environment
     environment.update(delta, scrollSpeed, player.mesh.position.z, elapsedTime);
 
-    // Player collision detection
-    const playerBox = new THREE.Box3().setFromObject(player.mesh);
-    const ships = environment.getShips();
-    const helicopters = environment.getHelicopters();
-    let playerCollided = false;
-
-    for (const ship of ships) {
-        if (playerBox.intersectsBox(new THREE.Box3().setFromObject(ship))) {
-            playerCollided = true;
-            break;
+    // Update explosions
+    for (let i = explosions.length - 1; i >= 0; i--) {
+        const explosion = explosions[i];
+        if (explosion && explosion.update(delta)) {
+            explosions.splice(i, 1);
         }
     }
 
-    if (!playerCollided) {
-        for (const heli of helicopters) {
-            if (playerBox.intersectsBox(new THREE.Box3().setFromObject(heli))) {
+    if (isGameOverSequence && explosions.length === 0) {
+        showGameOver();
+        isGameOverSequence = false;
+    }
+
+    if (isGameOverSequence) return;
+
+    // If no explosions are active, make sure player is visible
+    if (explosions.length === 0) {
+        player.mesh.visible = true;
+    }
+
+    // Player collision detection
+    let playerCollided = false;
+    if (player.mesh.visible) {
+        const playerBox = new THREE.Box3().setFromObject(player.mesh);
+        const ships = environment.getShips();
+        const helicopters = environment.getHelicopters();
+
+        for (const ship of ships) {
+            if (playerBox.intersectsBox(new THREE.Box3().setFromObject(ship))) {
                 playerCollided = true;
                 break;
             }
         }
-    }
 
-        if (playerCollided) {
-            lives--;
-            updateLivesUI();
-            if (lives <= 0) {
-                showGameOver();
-            } else {
-                player.mesh.position.set(0, 0.9, 20);
-                environment.reset();
+        if (!playerCollided) {
+            for (const heli of helicopters) {
+                if (playerBox.intersectsBox(new THREE.Box3().setFromObject(heli))) {
+                    playerCollided = true;
+                    break;
+                }
             }
         }
+    }
+
+    if (playerCollided && !isGameOverSequence) {
+        lives--;
+        updateLivesUI();
+        const explosionPos = player.mesh.position.clone();
+        
+        if (lives <= 0) {
+            explosions.push(new Explosion(engine.getScene(), explosionPos));
+            player.mesh.visible = false;
+            isGameOverSequence = true;
+        } else {
+            player.mesh.position.set(0, 0.9, 20);
+            environment.reset();
+            explosions.push(new Explosion(engine.getScene(), explosionPos));
+            player.mesh.visible = false;
+        }
+    }
 
     // Update projectiles and check collisions
     for (let i = projectiles.length - 1; i >= 0; i--) {
