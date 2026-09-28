@@ -184,6 +184,7 @@ engine.startLoop((delta: number) => {
                     projectile.destroy();
                     projectiles.splice(i, 1);
                     environment.removeHelicopter(heli);
+                    explosions.push(new Explosion(engine.getScene(), heli.position.clone(), 'helicopter'));
                     updateScore(150);
                     collided = true;
                     break;
